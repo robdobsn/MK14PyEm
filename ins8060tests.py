@@ -4,6 +4,7 @@ import ins8060cpu
 import unittest
 
 HALT = 0x00
+XAE = 0x01
 LD0 = 0xc0
 LD1 = 0xc1
 LD2 = 0xc2
@@ -176,8 +177,13 @@ class Test8060(unittest.TestCase):
         self.assertEqual(self.cpu.mem.read(0xf01) * 256 + self.cpu.mem.read(0xf02), v1 // v2)
         self.assertEqual(self.cpu.mem.read(0xf03), v1 % v2)
                 
-        
-        
+    def test_DISPLAY(self):
+        memCode = (0xf20, [LDI, 0x0d, XPAH1, LDI, 0x00, XPAL1, \
+               LDI, 0x28, ST1, 0x00, HALT ])
+        self.cpu = ins8060cpu.CPU_INS8060([memCode], True, {"base":0xf00,"count":0})
+        showMem(self.cpu.mem, 0xf20, 32)
+        self.cpu.run(0xf20)
+                
 #    def test_split(self):
 #        s = 'hello world'
 #        self.assertEqual(s.split(), ['hello', 'world'])

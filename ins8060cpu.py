@@ -3,24 +3,26 @@ import mk14memmap
 
 class CPU_INS8060:
 
-    def __init__(self, initialRAMList, debugOn = False, debugRam = None):
+    def __init__(self, initRAMList, initIP = 0, debugOn = False, debugRam = None):
         self.debugRam = debugRam
         self.debugOn = debugOn
-        self.reset(initialRAMList)
+        self.reset(initRAMList, initIP)
 
-    def reset(self, initialRAMList):
+    def reset(self, initRAMList, initIP):
         if self.debugOn:
             print("")
             print("Reset")
+        self.halted = False
         self.acc = 0
         self.ext = 0
         self.stat = 0
         self.cycles = 0
-        self.ptrs = [0,0,0,0]
+        self.ptrs = [initIP,0,0,0]
         self.mem = mk14memmap.MK14_MEMMAP()
         if self.debugOn:
-            print(initialRAMList)
-        self.mem.init(initialRAMList)
+            print(initRAMList)
+        self.mem.init(initRAMList)
+        self.showReg("")
 
     def run(self, start = None):
         if start != None:
@@ -28,6 +30,12 @@ class CPU_INS8060:
         self.execSome(8192)
         # check for exit button and exit if so
 
+    def service(self):
+        self.execSome(1)
+
+    def getMemMap(self):
+        return self.mem
+    
     def fetchIP(self):
         op = self.mem.read(self.ptrs[0])
         self.ptrs[0] += 1
@@ -45,20 +53,15 @@ class CPU_INS8060:
                 print(" @" + format(self.debugRam["base"], "04x") + " ", end="")
                 for i in range(self.debugRam["count"]):
                     print(format(self.mem.read(self.debugRam["base"]+i), "02x"), "", end="")
-            q = self.mem.read(self.debugRam["base"] + 1) * 256 + self.mem.read(self.debugRam["base"]+2)
-            r = self.mem.read(self.debugRam["base"] + 3)
-            print("q,r", q, r, end="")
             print()
 
     def execSome(self, numInstr):
-        self.showReg("")
-        while (True):
-            numInstr -= 1
-            if numInstr <= 0:
-                if self.debugOn:
-                    print("Done numInstrs")
-                break
+        # Check that CPU has not halted
+        if self.halted:
+            return
 
+        # Run in a loop until yield or halt
+        while (True):
             debugIpAddr = self.ptrs[0]
             opcode = self.fetchIP()
 
@@ -70,8 +73,15 @@ class CPU_INS8060:
             self.showReg("")
 
             if bHalt:
+                self.halted = True
                 if self.debugOn:
                     print("Stopping at HALT")
+                break
+
+            numInstr -= 1
+            if numInstr <= 0:
+#                if self.debugOn:
+#                    print("Yielding ... Done numInstrs")
                 break
 
     def addr12bit(self, ptr, ofs):
@@ -85,11 +95,14 @@ class CPU_INS8060:
         elif offset & 0x80 != 0:
             offset = offset - 256
         ptr = self.ptrs[ptrIdx]
+        if ptrIdx == 0:  # IP has already incremented so fix this
+            ptr -= 1
         addr = self.addr12bit(ptr, offset)
         return addr
 
     def autoIndexed(self, ptrIdx):
-        offset = self.fetchIP()
+        oOffset = self.fetchIP()
+        offset = oOffset
         if offset == 0x80:
             offset = self.ext
         elif offset & 0x80 != 0:
@@ -99,6 +112,7 @@ class CPU_INS8060:
         addr = self.ptrs[ptrIdx]
         if offset > 0:
             self.ptrs[ptrIdx] = self.addr12bit(self.ptrs[ptrIdx], offset)
+#        print("@IX", format(oOffset, "02x"), format(offset, "02x"), "ptrIdx", ptrIdx, "ptr", format(self.ptrs[ptrIdx], "04x"))
         return addr
 
     def inRange(self, val, start, leng):
@@ -250,7 +264,7 @@ class CPU_INS8060:
                 else:
                     debugStr = "JNZ False"
             if jump:
-                self.ptrs[0] = self.indexed(opcode&0x03)
+                self.ptrs[0] = self.indexed(opcode&0x03) + 1
             else:
                 self.ptrs[0] += 1
             self.cycles += 11

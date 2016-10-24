@@ -47,20 +47,30 @@ class SevenSegDigit:
     def show(self, num):
         for iid, on in zip(self.segs, self.digits[num]):
             self.canvas.itemconfigure(iid, state = 'normal' if on else 'hidden')
+
+    def dispBits(self, bits):
+        bitMask = 1
+        for i in range(len(self.segs)):
+            bitOn = (bits & bitMask) != 0
+            bitMask = bitMask << 1
+            self.canvas.itemconfigure(self.segs[i], state = 'normal' if bitOn else 'hidden')
+            
     
 class MK14_UI:
 
-    def __init__(self):
+    def __init__(self, mk14MemoryMap):
         self.tkRoot = tk.Tk()
         self.tkRoot.title("MK14")
         self.tkRoot.protocol("WM_DELETE_WINDOW", self.onCloseWindow)
         self.genDigits(8)
         self.genButtons()
+        self.memMap = mk14MemoryMap
         self.closing = False
 
     def service(self):
         self.tkRoot.update_idletasks()
         self.tkRoot.update()
+        self.displayFromMK14MemMap()
         return self.closing
 
     def onCloseWindow(self):
@@ -123,6 +133,12 @@ class MK14_UI:
         self.digits = []
         for i in range(numDigits):
             self.digits.append(SevenSegDigit(screen, x=10+i*33))
+
+    def displayFromMK14MemMap(self):
+        for i in range(8):
+            bits = self.memMap.getDisplayBits(i)
+            self.digits[7-i].dispBits(bits)
+            
 
 # Test code
 if __name__ == '__main__':
