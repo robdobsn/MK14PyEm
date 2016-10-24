@@ -57,6 +57,12 @@ class MK14_UI:
         # test the button command click
         s = "Button %s clicked" % btn
         self.tkRoot.title(s)
+
+    def release(self, btn, event):
+        print ("released", btn)
+
+    def press(self, btn, event):
+        print ("pressed", btn)
     
     def genButtons(self):
         # create a labeled frame for the keypad buttons
@@ -79,8 +85,12 @@ class MK14_UI:
         for label in btn_list:
             # partial takes care of function and argument
             cmd = partial(self.click, label)
+            rel = partial(self.release, label)
+            pres = partial(self.press, label)
             # create the button
             btn[n] = tk.Button(lf, text=label, width=5, command=cmd)
+            btn[n].bind("<Button-1>", pres)
+            btn[n].bind("<ButtonRelease-1>", rel)
             # position the button
             btn[n].grid(row=r, column=c)
             # increment button index
