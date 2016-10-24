@@ -50,8 +50,24 @@ class SevenSegDigit:
     
 class MK14_UI:
 
-    def __init__(self, tkRoot):
-        self.tkRoot = tkRoot
+    def __init__(self):
+        self.tkRoot = tk.Tk()
+        self.tkRoot.title("MK14")
+        self.tkRoot.protocol("WM_DELETE_WINDOW", self.onCloseWindow)
+        self.genDigits(8)
+        self.genButtons()
+        self.closing = False
+
+    def service(self):
+        self.tkRoot.update_idletasks()
+        self.tkRoot.update()
+        return self.closing
+
+    def onCloseWindow(self):
+        self.closing = True
+        
+    def close(self):
+        self.tkRoot.destroy()
 
     def click(self, btn):
         # test the button command click
@@ -67,7 +83,7 @@ class MK14_UI:
     def genButtons(self):
         # create a labeled frame for the keypad buttons
         # relief='groove' and labelanchor='nw' are default
-        lf = tk.LabelFrame(self.tkRoot, text="", bd=3)
+        lf = tk.LabelFrame(self.tkRoot, text="MK14", bd=3)
         lf.pack(padx=15, pady=10)
         # typical calculator button layout
         btn_list = [
@@ -107,21 +123,20 @@ class MK14_UI:
         self.digits = []
         for i in range(numDigits):
             self.digits.append(SevenSegDigit(screen, x=10+i*33))
-        
 
-tkRoot = tk.Tk()
-mk14ui = MK14_UI(tkRoot)
-mk14ui.genDigits(8)
-mk14ui.genButtons()
-n = 0
-def update():
-    global n
-    for i in range(8):
-        mk14ui.digits[i].show(n)
-    n = (n+1) % 16
-    tkRoot.after(1000, update)
-tkRoot.after(1000, update)
-#root.mainloop()
-while True:
-    tkRoot.update_idletasks()
-    tkRoot.update()
+# Test code
+if __name__ == '__main__':
+    def testUpdateUI():
+        global n
+        for i in range(8):
+            mk14ui.digits[i].show(n)
+        n = (n+1) % 16
+        mk14ui.tkRoot.after(1000, testUpdateUI)
+    n = 0
+    mk14ui = MK14_UI()
+    mk14ui.tkRoot.after(1000, testUpdateUI)
+    closing = False
+    while not closing:
+        closing = mk14ui.service()
+    mk14ui.close()
+    
