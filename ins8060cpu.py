@@ -18,11 +18,14 @@ class CPU_INS8060:
         self.stat = 0
         self.cycles = 0
         self.ptrs = [initIP,0,0,0]
-        self.mem = mk14memmap.MK14_MEMMAP()
+        self.mem = mk14memmap.MK14_MEMMAP(self.getCycles)
         if self.debugOn:
             print(initRAMList)
         self.mem.init(initRAMList)
         self.showReg("")
+
+    def getCycles(self):
+        return self.cycles
 
     def run(self, start = None):
         if start != None:
@@ -31,7 +34,7 @@ class CPU_INS8060:
         # check for exit button and exit if so
 
     def service(self):
-        self.execSome(1)
+        self.execSome(10)
 
     def getMemMap(self):
         return self.mem

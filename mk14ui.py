@@ -34,7 +34,7 @@ class SevenSegDigit:
         (1, 0, 0, 1, 1, 1, 1),  # 14=E
         (1, 0, 0, 0, 1, 1, 1),  # 15=F
     )
-    
+
     def __init__(self, canvas, *, x=10, y=10, length=20, width=3):
         self.canvas = canvas
         l = length
@@ -57,6 +57,8 @@ class SevenSegDigit:
             
     
 class MK14_UI:
+
+    persistenceOfVisionCycles = 10000
 
     def __init__(self, mk14MemoryMap):
         self.tkRoot = tk.Tk()
@@ -86,9 +88,11 @@ class MK14_UI:
 
     def release(self, btn, event):
         print ("released", btn)
+        self.memMap.setButton(btn, False)
 
     def press(self, btn, event):
         print ("pressed", btn)
+        self.memMap.setButton(btn, True)
     
     def genButtons(self):
         # create a labeled frame for the keypad buttons
@@ -135,9 +139,14 @@ class MK14_UI:
             self.digits.append(SevenSegDigit(screen, x=10+i*33))
 
     def displayFromMK14MemMap(self):
+        curCycles = self.memMap.getCyclesFn()
         for i in range(8):
-            bits = self.memMap.getDisplayBits(i)
-            self.digits[7-i].dispBits(bits)
+            bits, cycles = self.memMap.getDisplaySegments(i)
+#            print(curCycles, cycles)
+            if curCycles < cycles + self.persistenceOfVisionCycles:
+                self.digits[7-i].dispBits(bits)
+            else:
+                self.digits[7-i].dispBits(bits)
             
 
 # Test code
